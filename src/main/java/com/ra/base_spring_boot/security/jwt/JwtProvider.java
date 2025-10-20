@@ -2,12 +2,11 @@ package com.ra.base_spring_boot.security.jwt;
 
 import com.ra.base_spring_boot.model.User;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
@@ -24,7 +23,7 @@ public class JwtProvider {
     private Long EXPIRED_ACCESS;
 
     private Key getSignKey() {
-        byte[] keyBytes = SECRET_KEY.getBytes();;
+        byte[] keyBytes = SECRET_KEY.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -41,7 +40,15 @@ public class JwtProvider {
     }
 
     public String generateTokenFromUser(User user) {
-        return generateToken(user.getEmail());
+        return generateTokenWithRoles(user);
+    }
+
+    private String generateTokenWithRoles(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", user.getRoles().stream()
+                .map(role -> role.getRoleName().name())
+                .toList());
+        return createToken(claims, user);
     }
 
     private String createToken(Map<String, Object> claims, User user) {
@@ -81,12 +88,20 @@ public class JwtProvider {
     }
 
     public String getEmailFromToken(String token) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getEmailFromToken'");
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.getSubject();
     }
 
     public String getUserIdFromToken(String token) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getUserIdFromToken'");
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("id", String.class);
     }
 }

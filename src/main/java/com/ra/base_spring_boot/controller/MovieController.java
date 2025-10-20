@@ -21,7 +21,23 @@ public class MovieController {
     private final IGenreRepository genreRepository;
 
     @PostMapping
-    public ResponseEntity<Movie> createMovie(@RequestBody MovieRequest request) {
+    public ResponseEntity<?> createMovie(@RequestBody MovieRequest request) {
+
+        if (movieRepository.existsByTitleAndAuthorIgnoreCase(request.getTitle(), request.getAuthor())) {
+            return ResponseEntity.badRequest()
+                    .body("Phim '" + request.getTitle() + "' của tác giả '" + request.getAuthor() + "' đã tồn tại!");
+        }
+
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Tiêu đề phim không được để trống");
+        }
+        if (request.getDuration() == null || request.getDuration() <= 0) {
+            return ResponseEntity.badRequest().body("Thời lượng phim phải lớn hơn 0 phút");
+        }
+        if (request.getReleaseDate() == null) {
+            return ResponseEntity.badRequest().body("Phải có ngày phát hành phim");
+        }
+
         Set<Genre> genres = request.getGenreIds().stream()
                 .map(id -> genreRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Genre not found with id: " + id)))
@@ -55,9 +71,15 @@ public class MovieController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Integer id, @RequestBody MovieRequest request) {
+    public ResponseEntity<?> updateMovie(@PathVariable Integer id, @RequestBody MovieRequest request) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Movie not found with id: " + id));
+
+        boolean exists = movieRepository.existsByTitleAndAuthorIgnoreCase(request.getTitle(), request.getAuthor());
+        if (exists && !movie.getTitle().equalsIgnoreCase(request.getTitle())) {
+            return ResponseEntity.badRequest()
+                    .body("Phim '" + request.getTitle() + "' của tác giả '" + request.getAuthor() + "' đã tồn tại!");
+        }
 
         Set<Genre> genres = request.getGenreIds().stream()
                 .map(gid -> genreRepository.findById(gid)

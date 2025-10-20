@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IMovieRepository extends JpaRepository<Movie, Integer> {
+    boolean existsByTitleIgnoreCase(String title);
+    boolean existsByTitleAndAuthorIgnoreCase(String title, String author);
 }
